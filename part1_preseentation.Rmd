@@ -1,0 +1,123 @@
+---
+title: "Project_2_part1"
+author: "yaru peng"
+date: "4/25/2018"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(tidyverse)
+library(stringr)
+library(dplyr)
+library(ggplot2)
+
+url1 <- "http://www.ndbc.noaa.gov/view_text_file.php?filename=mlrf1h"
+url2 <- ".txt.gz&dir=data/historical/stdmet/"
+years <- c(1987:2017)
+urls <- str_c(url1, years, url2, sep = "")
+filenames <- str_c("mr", years, sep = "")
+N <- length(urls)
+
+for (i in 1:N){
+  suppressMessages(
+    assign(filenames[i], read_table(urls[i], col_names = TRUE))
+  )
+  file <- get(filenames[i])
+  colnames(file)[1] <-"YYYY"
+  if(!is.numeric(file[1,1])){
+    file <- file[2:nrow(file),]
+    file$YYYY <- as.numeric(file$YYYY)
+  }
+  file$YYYY <- ifelse(as.numeric(file$YYYY%/%100)<1, file$YYYY+1900, file$YYYY)
+  file <- file %>% filter(hh==12)
+    
+
+   
+  if(i == 1){
+    MR <- file %>% select(YYYY, MM, DD, hh, ATMP, WTMP)
+  }
+  else{
+    MR <- rbind.data.frame(MR, file %>% select(YYYY, MM, DD, hh, ATMP, WTMP))
+    }
+}
+
+MR$MM <- as.numeric(MR$MM)
+MR$DD <- as.numeric(MR$DD)
+MR$hh <- as.numeric(MR$hh)
+MR$ATMP <- as.numeric(MR$ATMP)
+MR$WTMP <- as.numeric(MR$WTMP)
+MR <- MR %>% 
+  filter(ATMP<99) %>% 
+  filter(WTMP<99)
+
+raw.data <- MR %>% 
+  select(YYYY,ATMP, WTMP,  MM, DD) %>% 
+  mutate(date=as.Date(paste(as.character(MM), "/", as.character(DD), "/", as.character(YYYY), sep=""), format = "%m/%d/%Y")) %>% 
+  select(date, ATMP, WTMP) 
+  
+tidy.data <- raw.data %>% 
+  gather(key = "Temp", value = "Celsius", -date)
+
+```
+
+## Introduction
+
+- Find the webside for NOAA Weather Station buoy 46035 at 57.026 N 177.738 W
+- Read, Clean, and organize the data to produce a time series
+- Visualize and explore the data
+
+
+## Temperature change of sea and air over time 
+
+```{r}
+ggplot(data = tidy.data, aes(x=date, y=Celsius, color = Temp))+geom_line()+
+  xlab("Year") +
+  ylab("Temperature") +
+  ggtitle("Temperature over time")
+```
+
+
+## Air temperature Trend
+
+```{r}
+
+ggplot(data = raw.data, aes(x = date, y=ATMP))+
+  geom_line()+
+  stat_smooth(method = lm)+
+  xlab("Year")+
+  ylab("Temperature(Celcius)")+
+  ggtitle("air")
+```
+
+## Air trend statistics test
+
+```{r}
+stat.air <- lm(ATMP~date, data = raw.data)
+summary(stat.air)
+```
+
+
+## Sea Temperature Trend
+
+```{r}
+ggplot(data = raw.data, aes(x = date, y=WTMP))+
+  geom_line()+
+  stat_smooth(method = lm)+
+  xlab("Year")+
+  ylab("Temperature(Celcius)")+
+  ggtitle("sea")
+
+```
+
+## Sea trend statistics test
+```{r}
+stat.sea <- lm(WTMP~date, data = raw.data)
+summary(stat.sea)
+
+```
+
+## Conclusion
+
+From the statistics test and graph, we can observe that sea temperature trend has a P-value less .05 thus we can conclude that sea temperature has increased over time. However on other hand, air temperature's p-value is greater than .05 thus we cannot say that mean has significantly increased over time.
+
