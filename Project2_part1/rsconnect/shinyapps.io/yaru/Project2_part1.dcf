@@ -1,0 +1,12 @@
+name: Project2_part1
+title: Project2_part1
+username:
+account: yaru
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 330641
+bundleId: 1340155
+url: https://yaru.shinyapps.io/Project2_part1/
+when: 1524718764.62547
+asMultiple: FALSE
+asStatic: FALSE
